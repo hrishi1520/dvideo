@@ -80,17 +80,38 @@ class App extends Component {
 
   //Get video
   captureFile = event => {
+    event.preventDefault();
+    const file = event.target.files[0];
+    const reader = new window.FileReader()
+    reader.readAsArrayBuffer(file)
 
+    reader.onloadend = () => {
+      this.setState({ buffer: Buffer(reader.result) })
+      console.log('buffer', this, this.state.buffer)
+    }
   }
 
-  //Upload video
   uploadVideo = title => {
-
+    //uplading the video to ipfs
+    ipfs.add(this.state.buffer, (error, result) => {
+      console.log(result)
+      if (error) {
+        console.log(error)
+        return
+      }
+      this.setState({ loading: true })
+      this.state.dvideo.methods.uploadVideo(result[0].hash, title).send({
+        from: this.state.account
+      }).on('transactionHash', (hash) => {
+        this.setState({ loading: false })
+      })
+    })
   }
 
   //Change Video
   changeVideo = (hash, title) => {
-
+    this.setState({ 'currentHash': hash })
+    this.setState({ 'currentTitle': title })
   }
 
   constructor(props) {
@@ -117,7 +138,12 @@ class App extends Component {
         {this.state.loading
           ? <div id="loader" className="text-center mt-5"><p>Loading...</p></div>
           : <Main
-          //states&functions
+            videos={this.state.videos}
+            uploadVideo={this.uploadVideo}
+            captureFile={this.captureFile}
+            changeVideo={this.changeVideo}
+            currentHash={this.state.currentHash}
+            currentTitle={this.state.currentTitle}
           />
         }
       </div>
